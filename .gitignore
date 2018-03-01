@@ -1,0 +1,5 @@
+.idea/
+data/
+src/__pycache__/
+notebooks/MNIST_data/
+notebooks/.ipynb_checkpoints/
