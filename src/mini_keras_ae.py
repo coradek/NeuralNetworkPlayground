@@ -1,8 +1,12 @@
+"""
+A Collection of small autoencoders
+"""
+
 from tensorflow.python.keras.layers import Input, Dense, LeakyReLU
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Conv2D, Conv2DTranspose
 from tensorflow.python.keras.layers import Dropout, Flatten, Reshape
-
+import numpy as np
 
 
 class AE_0(object):
@@ -86,6 +90,35 @@ class AE_dense_1(object):
         self.decoder = Sequential([
                             Dense(self.input_shape, input_dim=self.bottleneck),
                             LeakyReLU()
+                            ])
+        self.autoencoder = Sequential([self.encoder, self.decoder])
+        self.autoencoder.compile(optimizer='adagrad',
+                                 loss='mse',
+                                )
+
+class AE_x(object):
+    """
+    A Dense Autoencoder with an extra layer that has approximately the
+    same number of hyper parameters as the AE_conv_1 version above.
+
+    can I pass in the original image and let keras flatten it?
+    It seems that I can, but this trains 10x slower than the version
+    that takes in pre-flattened data (AE_dense_1)
+    """
+    def __init__(self, input_shape=(28,28,1), bottleneck=10):
+        self.input_shape = input_shape
+        self.bottleneck = bottleneck
+        self.encoder = Sequential([
+                            Dense(128, input_shape=self.input_shape),
+                            Flatten(),
+                            Dense(self.bottleneck),
+                            LeakyReLU()
+                            ])
+        flat_input = np.product(self.input_shape)
+        self.decoder = Sequential([
+                            Dense(flat_input, input_dim=self.bottleneck),
+                            LeakyReLU(),
+                            Reshape(self.input_shape) # unflatten
                             ])
         self.autoencoder = Sequential([self.encoder, self.decoder])
         self.autoencoder.compile(optimizer='adagrad',
