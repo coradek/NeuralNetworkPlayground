@@ -12,10 +12,11 @@ import numpy as np
 class AE_0(object):
     """
     A ridiculously simple AutoEncoder
-    One dense layer to a 9 dimensional bottleneck
+    One dense layer to a 10 dimensional bottleneck
     with the same in reverse on the other side
+    (can an autoencoder map 10 digits to 10 dimensions?)
 
-    Interestingly simple auto encoders like this amount to a process
+    Interestingly simple autoencoders like this amount to a process
     roughly equivalent to PCA
     """
     def __init__(self, input_shape=28*28*1, bottleneck=10):
@@ -76,7 +77,7 @@ class AE_dense_1(object):
     A Dense Autoencoder with an extra layer that has approximately the
     same number of hyper parameters as the AE_conv_1 version above.
 
-    Despite the extra layer and accompanying hyper parameters its performance
+    Despite the extra layer and accompanying hyperparameters, its performance
     is equivalent to that of the AE_0 model over 5 epochs
     """
     def __init__(self, input_shape=28*28*1, bottleneck=10):
@@ -101,7 +102,8 @@ class AE_x(object):
     A Dense Autoencoder with an extra layer that has approximately the
     same number of hyper parameters as the AE_conv_1 version above.
 
-    can I pass in the original image and let keras flatten it?
+    Idly poking the capabilities of Keras:
+    Can I pass in the original image and let keras flatten it?
     It seems that I can, but this trains 10x slower than the version
     that takes in pre-flattened data (AE_dense_1)
     """
