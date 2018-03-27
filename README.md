@@ -11,7 +11,7 @@ https://github.com/eragonruan/text-detection-ctpn
 https://arxiv.org/abs/1609.03605
 
 YOLO - you only look once
-object identification and locating
+object identification and location
 http://machinethink.net/blog/object-detection-with-yolo/
 https://github.com/experiencor/basic-yolo-keras
 https://arxiv.org/abs/1612.08242
