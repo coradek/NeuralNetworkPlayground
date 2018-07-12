@@ -15,3 +15,7 @@ object identification and location
 http://machinethink.net/blog/object-detection-with-yolo/
 https://github.com/experiencor/basic-yolo-keras
 https://arxiv.org/abs/1612.08242
+
+## TODO:
+- [ ] YOLO: get pretrained weights incorporate into network
+- [ ] YOLO: run (on small image set) to ensure operation

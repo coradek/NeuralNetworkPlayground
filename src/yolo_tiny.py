@@ -19,7 +19,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.keras.models import Sequential, Model
 from tensorflow.python.keras.layers import Reshape, Activation, Conv2D, Input, MaxPooling2D, BatchNormalization, Flatten, Dense
-from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
+from tensorflow.python.keras.layers import LeakyReLU
 # from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from tensorflow.python.keras.optimizers import SGD, Adam
 
@@ -41,148 +41,297 @@ class YoloTiny(object):
                  img_dim=(416,416),
                  grid_dim=(13,13),
                  num_anchor_boxes=5,
-                 num_classes=20):
+                 num_classes=20,
+                 # batch_size=8,
+                 anchor_tuples=((1.08, 1.19), (3.42, 4.41),
+                                (6.63, 11.38),  (9.42, 5.11),
+                                (16.62, 10.52))
+                 ):
 
         self.img_dim = img_dim     # Size of input images
         self.grid_dim = grid_dim   # Image subsections
         self.num_anchor_boxes = num_anchor_boxes
         self.num_classes = num_classes
+        self.anchor_tuples = anchor_tuples
 
         ## This is a training parameter - should be outside yolo class
-        BATCH_SIZE = 8
+        # BATCH_SIZE = 8
+
+
+        self.model = self._build_model_1()
+
+
+    # def _build_model(self):
+    #     model = Sequential([
+    #             ## Layer One (all layers follow this general structure)
+    #                 Conv2D(16, (3,3),
+    #                        strides=(1,1), padding='same',
+    #                        use_bias=False, input_shape=(416,416,3)),
+    #                 BatchNormalization(),
+    #                 LeakyReLU(alpha=0.1),
+    #                 MaxPooling2D(pool_size=(2, 2)),
+    #             ## Layers 2-6
+    #                 conv_batchnorm_activate_pool(32),
+    #                 conv_batchnorm_activate_pool(64),
+    #                 conv_batchnorm_activate_pool(128),
+    #                 conv_batchnorm_activate_pool(256),
+    #                 conv_batchnorm_activate_pool(512,
+    #                                              pool_stride=(1,1),
+    #                                              pool_padding="same"),
+    #             ## Layers 7-8 do not have max pooling
+    #                 conv_batchnorm_activate_pool(1024, pool=False),
+    #                 conv_batchnorm_activate_pool(1024, pool=False),
+    #             ## Layer 9
+    #                 Conv2D(self.num_anchor_boxes * (4 + 1 + self.num_classes),
+    #                        (1, 1), strides=(1, 1),
+    #                        kernel_initializer='he_normal'),
+    #                 Activation('linear'),
+    #                 # Reshape((GRID_H, GRID_W, BOX, 4 + 1 + ORIG_CLASS)),
+    #                 Reshape((*self.grid_dim,
+    #                          self.num_anchor_boxes,
+    #                          4+1+self.num_classes))
+    #             ])
+    #     return model
+
+    def _build_model_1(self):
+        model = Sequential()
+        ## Layer One (all layers follow this general structure)
+        model.add(Conv2D(16, (3,3),
+                         strides=(1,1), padding='same',
+                         use_bias=False, input_shape=(416,416,3))
+                 )
+        model.add(BatchNormalization())
+        model.add(LeakyReLU(alpha=0.1))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        ## Layers 2-6 MaxPool until a 13X13 grid remains
+        model = conv_batchnorm_activate_pool_1(model, 32, 208)
+        model = conv_batchnorm_activate_pool_1(model, 64, 104)
+        model = conv_batchnorm_activate_pool_1(model, 128, 52)
+        model = conv_batchnorm_activate_pool_1(model, 256, 26)
+        model = conv_batchnorm_activate_pool_1(model, 512, 13,
+                                               pool_stride=(1,1),
+                                               pool_padding="same")
+        ## Layers 7-8 do not have max pooling
+        model = conv_batchnorm_activate_pool_1(model, 1024, 13, pool=False)
+        model = conv_batchnorm_activate_pool_1(model, 1024, 13, pool=False)
+        ## Layer 9
+        model.add(Conv2D(self.num_anchor_boxes * (1 + 4 + self.num_classes),
+                         (1, 1), strides=(1, 1),
+                         kernel_initializer='he_normal'))
+        model.add(Activation('linear'))
+        # Reshape((GRID_H, GRID_W, BOX, 4 + 1 + ORIG_CLASS)),
+        model.add(Reshape((*self.grid_dim,
+                           self.num_anchor_boxes,
+                           1 + 4 + self.num_classes)))
+
+        return model
+
+    # def _build_model_0(self):
+    #     model = Sequential([
+    #             ## Layer One (all layers follow this general structure)
+    #                 Conv2D(16, (3,3),
+    #                        strides=(1,1), padding='same',
+    #                        use_bias=False, input_shape=(416,416,3)),
+    #                 BatchNormalization(),
+    #                 LeakyReLU(alpha=0.1),
+    #                 MaxPooling2D(pool_size=(2, 2)),
+    #             ## Layers 2-6 MaxPool until a 13X13 grid remains
+    #                 conv_batchnorm_activate_pool_0(32, 208),
+    #                 conv_batchnorm_activate_pool_0(64, 104),
+    #                 conv_batchnorm_activate_pool_0(128, 52),
+    #                 conv_batchnorm_activate_pool_0(256, 26),
+    #                 conv_batchnorm_activate_pool_0(512, 13,
+    #                                              pool_stride=(1,1),
+    #                                              pool_padding="same"),
+    #             ## Layers 7-8 do not have max pooling
+    #                 conv_batchnorm_activate_pool_0(1024, 13, pool=False),
+    #                 conv_batchnorm_activate_pool_0(1024, 13, pool=False),
+    #             ## Layer 9
+    #                 Conv2D(self.num_anchor_boxes * (1 + 4 + self.num_classes),
+    #                        (1, 1), strides=(1, 1),
+    #                        kernel_initializer='he_normal'),
+    #                 Activation('linear'),
+    #                 # Reshape((GRID_H, GRID_W, BOX, 4 + 1 + ORIG_CLASS)),
+    #                 Reshape((self.grid_dim,
+    #                          self.num_anchor_boxes,
+    #                          1 + 4 + self.num_classes))
+    #             ])
+    #     return model
+
+
+    def custom_loss(self, y_true, y_pred):
+        """
+        The YOLO architecture is a straight forward CNN
+        What makes it awesome is the special loss function which optimizes
+        - the probability an object exists in a particular grid square
+        - the likely hood of each class of object being detected
+        - which boxes are most likely to contain a target object
+        - the amount of overlap for all boxes containing the same
+          class of object
+        - and the amount of overlap between the boxes the model considers
+          most likely to contain a target object and the actual boxes for an image
+
+        all in one fell swoop
+        """
 
         NORM_H, NORM_W = self.img_dim
         GRID_H, GRID_W = self.grid_dim
         BOX = self.num_anchor_boxes
-        ORIG_CLASS = self.num_classes
+        ANCHORS = [dim for anchor_box in self.anchor_tuples
+                       for dim in anchor_box]
 
-        self.model = self._build_model()
+        ## TODO: this probably should be declared in here
+        ## parameterize in class
+        SCALE_NOOB, SCALE_CONF, SCALE_COOR, SCALE_PROB = 0.5, 5.0, 5.0, 1.0
 
+        ## Not Used in loss function
+        # ORIG_CLASS = self.num_classes
 
-    def _build_model():
-        model = Sequential([
-                ## Layer One (all layers follow this general structure)
-                    Conv2D(16, (3,3),
-                           strides=(1,1), padding='same',
-                           use_bias=False, input_shape=(416,416,3))
-                    BatchNormalization(),
-                    LeakyReLU(alpha=0.1),
-                    MaxPooling2D(pool_size=(2, 2)),
-                ## Layers 2-6
-                    conv_batchnorm_activate_pool(32),
-                    conv_batchnorm_activate_pool(64),
-                    conv_batchnorm_activate_pool(128),
-                    conv_batchnorm_activate_pool(256),
-                    conv_batchnorm_activate_pool(512,
-                                                 pool_stride=(1,1),
-                                                 pool_padding="same"),
-                ## Layers 7-8 do not have max pooling
-                    conv_batchnorm_activate_pool(1024, pool=False),
-                    conv_batchnorm_activate_pool(1024, pool=False),
-                ## Layer 9
-                    Conv2D(BOX * (4 + 1 + ORIG_CLASS),
-                           (1, 1), strides=(1, 1),
-                           kernel_initializer='he_normal'),
-                    Activation('linear'),
-                    Reshape((GRID_H, GRID_W, BOX, 4 + 1 + ORIG_CLASS)),
-                ])
-        return model
+        ### Adjust prediction
+        # adjust x and y
+        pred_box_xy = tf.sigmoid(y_pred[:,:,:,:,:2])
 
+        # adjust w and h
+        pred_box_wh = tf.exp(y_pred[:,:,:,:,2:4]) * np.reshape(ANCHORS, [1,1,1,BOX,2])
+        pred_box_wh =  tf.sqrt(pred_box_wh / np.reshape([float(GRID_W),
+                                                         float(GRID_H)],
+                               [1,1,1,1,2]))
 
+        # adjust confidence
+        pred_box_conf = tf.expand_dims(tf.sigmoid(y_pred[:, :, :, :, 4]), -1)
 
-def custom_loss(y_true, y_pred):
-    """
-    The YOLO architecture is a straight forward CNN
-    What makes it awesome is the special loss function which optimizes
-    - the probability an object exists in a particular grid square
-    - the likely hood of each class of object being detected
-    - which boxes are most likely to contain a target object
-    - the amount of overlap for all boxes containing the same
-      class of object
-    - and the amount of overlap between the boxes the model considers
-      most likely to contain a target object and the actual boxes for an image
+        # adjust probability
+        pred_box_prob = tf.nn.softmax(y_pred[:, :, :, :, 5:])
 
-    all in one fell swoop
-    """
-    ### Adjust prediction
-    # adjust x and y
-    pred_box_xy = tf.sigmoid(y_pred[:,:,:,:,:2])
+        y_pred = tf.concat([pred_box_xy, pred_box_wh, pred_box_conf, pred_box_prob], 4)
+        print("Y_pred shape: {}".format(y_pred.shape))
 
-    # adjust w and h
-    pred_box_wh = tf.exp(y_pred[:,:,:,:,2:4]) * np.reshape(ANCHORS, [1,1,1,BOX,2])
-    pred_box_wh = tf.sqrt(pred_box_wh / np.reshape([float(GRID_W), float(GRID_H)], [1,1,1,1,2]))
+        ### Adjust ground truth
+        # adjust x and y
+        center_xy = .5*(y_true[:,:,:,:,0:2] + y_true[:,:,:,:,2:4])
+        center_xy = center_xy / np.reshape([(float(NORM_W)/GRID_W),
+                                            (float(NORM_H)/GRID_H)],
+                                            [1,1,1,1,2])
+        true_box_xy = center_xy - tf.floor(center_xy)
 
-    # adjust confidence
-    pred_box_conf = tf.expand_dims(tf.sigmoid(y_pred[:, :, :, :, 4]), -1)
+        # adjust w and h
+        true_box_wh = (y_true[:,:,:,:,2:4] - y_true[:,:,:,:,0:2])
+        true_box_wh = tf.sqrt(true_box_wh / np.reshape([float(NORM_W), float(NORM_H)], [1,1,1,1,2]))
 
-    # adjust probability
-    pred_box_prob = tf.nn.softmax(y_pred[:, :, :, :, 5:])
+        # adjust confidence
+        pred_tem_wh = tf.pow(pred_box_wh, 2) * np.reshape([GRID_W, GRID_H],
+                                                          [1,1,1,1,2])
+        pred_box_area = pred_tem_wh[:,:,:,:,0] * pred_tem_wh[:,:,:,:,1]
+        pred_box_ul = pred_box_xy - 0.5 * pred_tem_wh
+        pred_box_bd = pred_box_xy + 0.5 * pred_tem_wh
 
-    y_pred = tf.concat([pred_box_xy, pred_box_wh, pred_box_conf, pred_box_prob], 4)
-    print("Y_pred shape: {}".format(y_pred.shape))
+        true_tem_wh = tf.pow(true_box_wh, 2) * np.reshape([GRID_W, GRID_H],
+                                                          [1,1,1,1,2])
+        true_box_area = true_tem_wh[:,:,:,:,0] * true_tem_wh[:,:,:,:,1]
+        true_box_ul = true_box_xy - 0.5 * true_tem_wh
+        true_box_bd = true_box_xy + 0.5 * true_tem_wh
 
-    ### Adjust ground truth
-    # adjust x and y
-    center_xy = .5*(y_true[:,:,:,:,0:2] + y_true[:,:,:,:,2:4])
-    center_xy = center_xy / np.reshape([(float(NORM_W)/GRID_W), (float(NORM_H)/GRID_H)], [1,1,1,1,2])
-    true_box_xy = center_xy - tf.floor(center_xy)
+        intersect_ul = tf.maximum(pred_box_ul, true_box_ul)
+        intersect_br = tf.minimum(pred_box_bd, true_box_bd)
+        intersect_wh = intersect_br - intersect_ul
+        intersect_wh = tf.maximum(intersect_wh, 0.0)
+        intersect_area = intersect_wh[:,:,:,:,0] * intersect_wh[:,:,:,:,1]
 
-    # adjust w and h
-    true_box_wh = (y_true[:,:,:,:,2:4] - y_true[:,:,:,:,0:2])
-    true_box_wh = tf.sqrt(true_box_wh / np.reshape([float(NORM_W), float(NORM_H)], [1,1,1,1,2]))
+        iou = tf.truediv(intersect_area,
+                         true_box_area + pred_box_area - intersect_area)
+        best_box = tf.equal(iou, tf.reduce_max(iou, [3], True))
+        best_box = tf.to_float(best_box)
+        true_box_conf = tf.expand_dims(best_box * y_true[:,:,:,:,4], -1)
 
-    # adjust confidence
-    pred_tem_wh = tf.pow(pred_box_wh, 2) * np.reshape([GRID_W, GRID_H], [1,1,1,1,2])
-    pred_box_area = pred_tem_wh[:,:,:,:,0] * pred_tem_wh[:,:,:,:,1]
-    pred_box_ul = pred_box_xy - 0.5 * pred_tem_wh
-    pred_box_bd = pred_box_xy + 0.5 * pred_tem_wh
+        # adjust confidence
+        true_box_prob = y_true[:,:,:,:,5:]
 
-    true_tem_wh = tf.pow(true_box_wh, 2) * np.reshape([GRID_W, GRID_H], [1,1,1,1,2])
-    true_box_area = true_tem_wh[:,:,:,:,0] * true_tem_wh[:,:,:,:,1]
-    true_box_ul = true_box_xy - 0.5 * true_tem_wh
-    true_box_bd = true_box_xy + 0.5 * true_tem_wh
+        y_true = tf.concat([true_box_xy, true_box_wh,
+                            true_box_conf, true_box_prob], 4)
+        print("Y_true shape: {}".format(y_true.shape))
+        #y_true = tf.Print(y_true, [true_box_wh], message='DEBUG', summarize=30000)
 
-    intersect_ul = tf.maximum(pred_box_ul, true_box_ul)
-    intersect_br = tf.minimum(pred_box_bd, true_box_bd)
-    intersect_wh = intersect_br - intersect_ul
-    intersect_wh = tf.maximum(intersect_wh, 0.0)
-    intersect_area = intersect_wh[:,:,:,:,0] * intersect_wh[:,:,:,:,1]
+        ### Compute the weights
+        weight_coor = tf.concat(4 * [true_box_conf], 4)
+        weight_coor = SCALE_COOR * weight_coor
 
-    iou = tf.truediv(intersect_area, true_box_area + pred_box_area - intersect_area)
-    best_box = tf.equal(iou, tf.reduce_max(iou, [3], True))
-    best_box = tf.to_float(best_box)
-    true_box_conf = tf.expand_dims(best_box * y_true[:,:,:,:,4], -1)
+        weight_conf = SCALE_NOOB * (1. - true_box_conf) + SCALE_CONF * true_box_conf
 
-    # adjust confidence
-    true_box_prob = y_true[:,:,:,:,5:]
+        weight_prob = tf.concat(CLASS * [true_box_conf], 4)
+        weight_prob = SCALE_PROB * weight_prob
 
-    y_true = tf.concat([true_box_xy, true_box_wh, true_box_conf, true_box_prob], 4)
-    print("Y_true shape: {}".format(y_true.shape))
-    #y_true = tf.Print(y_true, [true_box_wh], message='DEBUG', summarize=30000)
+        weight = tf.concat([weight_coor, weight_conf, weight_prob], 4)
+        print("Weight shape: {}".format(weight.shape))
 
-    ### Compute the weights
-    weight_coor = tf.concat(4 * [true_box_conf], 4)
-    weight_coor = SCALE_COOR * weight_coor
+        ### Finalize the loss
+        loss = tf.pow(y_pred - y_true, 2)
+        loss = loss * weight
+        loss = tf.reshape(loss, [-1, GRID_W*GRID_H*BOX*(4 + 1 + CLASS)])
+        loss = tf.reduce_sum(loss, 1)
+        loss = .5 * tf.reduce_mean(loss)
 
-    weight_conf = SCALE_NOOB * (1. - true_box_conf) + SCALE_CONF * true_box_conf
-
-    weight_prob = tf.concat(CLASS * [true_box_conf], 4)
-    weight_prob = SCALE_PROB * weight_prob
-
-    weight = tf.concat([weight_coor, weight_conf, weight_prob], 4)
-    print("Weight shape: {}".format(weight.shape))
-
-    ### Finalize the loss
-    loss = tf.pow(y_pred - y_true, 2)
-    loss = loss * weight
-    loss = tf.reshape(loss, [-1, GRID_W*GRID_H*BOX*(4 + 1 + CLASS)])
-    loss = tf.reduce_sum(loss, 1)
-    loss = .5 * tf.reduce_mean(loss)
-
-    return loss
+        return loss
 
 
-def conv_batchnorm_activate_pool(conv_filters,
+# def conv_batchnorm_activate_pool(conv_filters,
+#                                  pool=True,
+#                                  pool_stride=None,
+#                                  pool_padding='valid'):
+#     """return convolution, nomalization, activation and pooling layers
+#
+#     All YOLO layers follow this structure with a few minor changes
+#
+#     Conv2D
+#     BatchNormalization
+#     LeakyReLU
+#     MaxPooling2D (as needed)
+#     """
+#     layers = Sequential([
+#                 Conv2D(conv_filters,
+#                        (3,3), strides=(1,1),
+#                        padding='same', use_bias=False),
+#                 BatchNormalization(),
+#                 LeakyReLU(alpha=0.1)
+#                 ])
+#     if pool:
+#         layers.add(MaxPooling2D(pool_size=(2, 2),
+#                                 strides=pool_stride,
+#                                 padding=pool_padding))
+#     return layers
+
+
+# def conv_batchnorm_activate_pool_0(conv_filters,
+#                                  input_size,
+#                                  pool=True,
+#                                  pool_stride=None,
+#                                  pool_padding='valid'):
+#     """return convolution, nomalization, activation and pooling layers
+#
+#     All YOLO layers follow this structure with a few minor changes
+#
+#     Conv2D
+#     BatchNormalization
+#     LeakyReLU
+#     MaxPooling2D (as needed)
+#     """
+#     # input_shape = (input_size, input_size, 3)
+#     input_shape = (input_size, input_size, 3)
+#     layers = Sequential([
+#                 Conv2D(conv_filters, (3,3),
+#                        input_shape=input_shape, strides=(1,1),
+#                        padding='same', use_bias=False),
+#                 BatchNormalization(),
+#                 LeakyReLU(alpha=0.1)
+#                 ])
+#     if pool:
+#         layers.add(MaxPooling2D(pool_size=(2, 2),
+#                                 strides=pool_stride,
+#                                 padding=pool_padding))
+#     return layers
+
+def conv_batchnorm_activate_pool_1(model,
+                                 conv_filters,
+                                 input_size,
                                  pool=True,
                                  pool_stride=None,
                                  pool_padding='valid'):
@@ -195,15 +344,16 @@ def conv_batchnorm_activate_pool(conv_filters,
     LeakyReLU
     MaxPooling2D (as needed)
     """
-    layers = Sequential([
-                Conv2D(conv_filters,
-                       (3,3), strides=(1,1),
+    # input_shape = (input_size, input_size, 3)
+    input_shape = (input_size, input_size, 3)
+    model.add(Conv2D(conv_filters, (3,3),
+                       input_shape=input_shape, strides=(1,1),
                        padding='same', use_bias=False)
-                BatchNormalization(),
-                LeakyReLU(alpha=0.1)
-                ])
+             )
+    model.add(BatchNormalization())
+    model.add(LeakyReLU(alpha=0.1))
     if pool:
-        layers.add(MaxPooling2D(pool_size=(2, 2),
+        model.add(MaxPooling2D(pool_size=(2, 2),
                                 strides=pool_stride,
                                 padding=pool_padding))
-    return layers
+    return model
