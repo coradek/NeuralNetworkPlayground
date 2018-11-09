@@ -28,5 +28,15 @@ YOLO website: https://pjreddie.com/darknet/yolo/
 
 ___
 ## TODO:
+
+fix tensorflow / keras
+  reinstall?
+
+__RNN todo:__
+- [ ] data generator for rnn
+  - [ ] QUESTION: can batch_limit in `_bucket_to_fit()` and max_batch_size in `gen_data` be changed to batchsize? or is batchsize controled elsewhere (meaning these are just backup limits)
+- [ ] adapt to json/yaml config format
+
+__YOLO todo:__
 - [ ] YOLO: get pretrained weights incorporate into network
 - [ ] YOLO: run (on small image set) to ensure operation

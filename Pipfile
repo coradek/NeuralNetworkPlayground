@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+tensorflow = {file = "https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.11.0-py3-none-any.whl"}
+ipykernel = "*"
+numpy = "*"
+pandas = "*"
+matplotlib = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"
