@@ -71,3 +71,61 @@ class Parameters:
     data = create_easy_token_extraction_data(data_size=data_size,
                                              char_string=char_string)
 
+
+def do_encoding():
+    print("Building Encodings")
+    # Placeholders
+    input_encoding = np.zeros(
+                (data_size, max_input_length , num_input_characters),
+                dtype='float32')
+    output_encoding = np.zeros(
+                (data_size, max_output_length, num_output_characters),
+                dtype='float32')
+
+    # These can all be combined into one itterator
+    # Separated for clarity
+
+    ## One hot character encoding of input_data
+    for ii, xx in enumerate(data[:, 0]):
+        for jj, ch in enumerate(xx):
+            input_encoding[ii, jj, char_index[ch]] = 1
+
+    ## One hot character encoding of output_data
+    for ii, xx in enumerate(data[:, 1]):
+        for jj, ch in enumerate(xx):
+            output_encoding[ii, jj, char_index[ch]] = 1
+
+class Encoder:
+    """class to encode/decode data for a particular rnn
+
+    store vocab for input and output
+    convert input strings to onehot encoded input arrays
+    convert output strings to onehot encoded output arrays
+    and vice versa
+    """
+    def __init__(self, input_data, output_data,
+                 input_vocab=None, output_vocab=None,
+                 stop_token=True, unknown_token=True,
+                 generate_vocabularies=False):
+        """
+
+        """
+
+        pass
+
+    def encode(data, vocabulary):
+        """
+        input:
+            data (array): array of strings to encode
+            vocabulary (dict): map of characters to indecies
+                EX: {"A":0, "B":1, ...}
+        """
+        data_size = len(data)
+        max_input_length =
+        num_input_characters =
+        input_encoding = np.zeros(
+                    (data_size, max_input_length, num_input_characters),
+                    dtype='float32')
+        for ii, xx in enumerate(data[:, 0]):
+            for jj, ch in enumerate(xx):
+                encoding[ii, jj, vocabulary[ch]] = 1

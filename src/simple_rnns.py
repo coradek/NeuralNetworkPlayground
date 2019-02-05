@@ -10,10 +10,12 @@ which control how much past information is preserved/forgotten for future steps
 from tensorflow.python.keras.models import Model, Sequential
 from tensorflow.python.keras.layers import Input, GRU, Dense
 from tensorflow.python.keras.regularizers import l2
-# from keras.models import Model, Sequential
-# from keras.layers import Input, GRU, Dense
-# from keras.regularizers import l2
 # from .nn_settings.simple_gru_parameters import *
+
+## For Mike's amount rnn
+from tensorflow.python.keras.layers import TimeDistributed, Bidirectional, RepeatVector, Embedding
+from tensorflow.python.keras.optimizers import RMSprop
+# from ConcurrenceLayer import Concurrence
 
 
 def lazy_gru_model(input_size, latent_dim):
@@ -52,4 +54,49 @@ def simple_gru_model(num_encoder_tokens, num_decoder_tokens, latent_dim):
     decoder_dense = Dense(num_decoder_tokens, activation='softmax')
     decoder_outputs = decoder_dense(decoder_outputs)
     model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+    return model
+
+
+def mikes_amount_rnn(input_size, output_size,
+                     max_out_seq_len, hidden_size,
+                     embedding=False):
+    LEARN_RATE = 0.001
+    OB_REG = 0.001
+    OW_REG = 0.0001
+    B_REG = 0.0001
+    W_REG = 0.000001
+    U_REG = 0.00001
+    DROPOUT = 0.10
+
+    model = Sequential()
+    if embedding:
+        model.add(Embedding(input_size, hidden_size))
+        model.add(Bidirectional(GRU(hidden_size,
+                        kernel_initializer='glorot_uniform',
+                        recurrent_initializer='orthogonal',
+                        return_sequences=True,
+                        kernel_regularizer=l2(W_REG),
+                        recurrent_regularizer=l2(U_REG),
+                        bias_regularizer=l2(B_REG), dropout=DROPOUT,
+                        recurrent_dropout=DROPOUT),
+                    merge_mode='concat')
+                )
+    else:
+        model.add(Bidirectional(GRU(hidden_size, kernel_initializer='glorot_uniform',
+                                    recurrent_initializer='orthogonal', return_sequences=True,
+                                    kernel_regularizer=l2(W_REG), recurrent_regularizer=l2(U_REG),
+                                    bias_regularizer=l2(B_REG), dropout=DROPOUT, recurrent_dropout=DROPOUT),
+                                merge_mode='concat', input_shape=(None, input_size)))
+    # model.add(Concurrence())
+    # model.add(RepeatVector(max_out_seq_len + 1))
+    model.add(GRU(hidden_size * 2, kernel_initializer='glorot_uniform',
+                recurrent_initializer='orthogonal', return_sequences=True,
+                kernel_regularizer=l2(W_REG), recurrent_regularizer=l2(U_REG),
+                bias_regularizer=l2(B_REG), dropout=DROPOUT,
+                recurrent_dropout=DROPOUT)
+            )
+    model.add(TimeDistributed(Dense(output_size, bias_regularizer=l2(OB_REG),
+                                    kernel_regularizer=l2(OW_REG), activation="softmax")))
+    rms_prop = RMSprop(lr=LEARN_RATE, rho=0.9, decay=0.0, epsilon=1e-08)
+    model.compile(loss="categorical_crossentropy", optimizer=rms_prop)
     return model
