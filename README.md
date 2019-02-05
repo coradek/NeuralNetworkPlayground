@@ -40,3 +40,7 @@ __RNN todo:__
 __YOLO todo:__
 - [ ] YOLO: get pretrained weights incorporate into network
 - [ ] YOLO: run (on small image set) to ensure operation
+
+__tflite conversion todo:__
+- [ ] compare logloss/accuracy of tflite and original model  
+- [ ] 
