@@ -18,32 +18,40 @@ from tensorflow.python.keras.optimizers import RMSprop
 # from ConcurrenceLayer import Concurrence
 
 
-def lazy_gru_model(input_size, latent_dim):
-    LEARN_RATE = 0.001
-    OB_REG = 0.001
-    OW_REG = 0.00001
-    B_REG = 0.0001
-    U_REG = 0.00001
-    W_REG = 0.000001
+def simple_gru(input_size, output_size, latent_dim, max_out_seq_len):
+    """
+    A simple GRU stripped down about as much as possible
+    """
     model = Sequential()
-    model.add(GRU(latent_dim, init='glorot_uniform',
-                  inner_init='orthogonal',
-                  return_sequences=True,
-                  U_regularizer=l2(U_REG),
-                  W_regularizer=l2(W_REG),
-                  b_regularizer=l2(l=B_REG), unroll=False),
-                  merge_mode='concat',
-                  input_shape=(None, input_size))
-    rms_prop = RMSprop(lr=LEARN_RATE,
-                       rho=0.9, decay=0.0,
-                       epsilon=1e-08)
-    model.compile(loss="mean_squared_error",
+    model.add(GRU(latent_dim,
+                  return_sequences=False,
+                  input_shape=(None, input_size)
+                  ),
+              )
+    ## RepeatVector repeatedly calls the GRU layer
+    ## Storing the output states in an array
+    model.add(RepeatVector(max_out_seq_len))
+    ## TimeDistributed Dense layer makes a prediction for each
+    ## GRU output state in the array from RepeatVector
+    model.add(TimeDistributed(Dense(output_size, activation="softmax")
+                              )
+              )
+    rms_prop = RMSprop(
+                       rho=0.9,
+                       decay=0.0,
+                       epsilon=1e-08,
+                       )
+    model.compile(loss="categorical_crossentropy",
                   optimizer=rms_prop)
-
     return model
 
 
-def simple_gru_model(num_encoder_tokens, num_decoder_tokens, latent_dim):
+def teacher_forcing_gru_model(num_encoder_tokens,
+                              num_decoder_tokens,
+                              latent_dim):
+    """
+    A work in progress
+    """
     encoder_inputs = Input(shape=(None, num_encoder_tokens))
     encoder = GRU(latent_dim, return_state=True)
     encoder_outputs, state_h = encoder(encoder_inputs)
@@ -54,6 +62,7 @@ def simple_gru_model(num_encoder_tokens, num_decoder_tokens, latent_dim):
     decoder_dense = Dense(num_decoder_tokens, activation='softmax')
     decoder_outputs = decoder_dense(decoder_outputs)
     model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+
     return model
 
 
@@ -82,13 +91,21 @@ def mikes_amount_rnn(input_size, output_size,
                     merge_mode='concat')
                 )
     else:
-        model.add(Bidirectional(GRU(hidden_size, kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal', return_sequences=True,
-                                    kernel_regularizer=l2(W_REG), recurrent_regularizer=l2(U_REG),
-                                    bias_regularizer=l2(B_REG), dropout=DROPOUT, recurrent_dropout=DROPOUT),
-                                merge_mode='concat', input_shape=(None, input_size)))
+        model.add(Bidirectional(GRU(hidden_size,
+                            kernel_initializer='glorot_uniform',
+                            recurrent_initializer='orthogonal',
+                            return_sequences=True,
+                            kernel_regularizer=l2(W_REG),
+                            recurrent_regularizer=l2(U_REG),
+                            bias_regularizer=l2(B_REG),
+                            dropout=DROPOUT,
+                            recurrent_dropout=DROPOUT
+                            ),
+                        merge_mode='concat', input_shape=(None, input_size)
+                        )
+                    )
     # model.add(Concurrence())
-    # model.add(RepeatVector(max_out_seq_len + 1))
+    model.add(RepeatVector(max_out_seq_len + 1))
     model.add(GRU(hidden_size * 2, kernel_initializer='glorot_uniform',
                 recurrent_initializer='orthogonal', return_sequences=True,
                 kernel_regularizer=l2(W_REG), recurrent_regularizer=l2(U_REG),

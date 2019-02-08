@@ -37,10 +37,17 @@ __RNN todo:__
   - [ ] QUESTION: can batch_limit in `_bucket_to_fit()` and max_batch_size in `gen_data` be changed to batchsize? or is batchsize controled elsewhere (meaning these are just backup limits)
 - [ ] adapt to json/yaml config format
 
+*ENCODER*
+- [ ] add support for start, stop, pad and unknown characters to encoder class
+- [ ] add build_vocabulary method to encoder
+- [ ] add save_vocabulary method
+- [ ] enable encoder to process in batches
+- [ ] enable encoder to add to vocab over batches
+
 __YOLO todo:__
 - [ ] YOLO: get pretrained weights incorporate into network
 - [ ] YOLO: run (on small image set) to ensure operation
 
 __tflite conversion todo:__
 - [ ] compare logloss/accuracy of tflite and original model  
-- [ ] 
+- [ ]
