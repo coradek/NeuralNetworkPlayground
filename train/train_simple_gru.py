@@ -5,20 +5,20 @@ import os
 import numpy as np
 from tensorflow.python.keras.callbacks import ModelCheckpoint
 from tensorflow.python.keras.models import load_model
-from src.nn_settings.simple_gru_parameters import Parameters, Encoder
+from src.nn_settings.simple_gru_config import Config, Encoder
 from src.simple_rnns import simple_gru, mikes_amount_rnn
 
 def main():
-    parameters = Parameters()
-    batch_size = parameters.batch_size
-    epochs = parameters.epochs
-    latent_dim = parameters.latent_dim
-    data = parameters.data
-    num_input_characters = parameters.num_input_characters
-    num_output_characters = parameters.num_output_characters
-    input_encoding = parameters.input_encoding
-    output_encoding = parameters.output_encoding
-    enc = parameters.encoder
+    config = Config()
+    batch_size = config.batch_size
+    epochs = config.epochs
+    latent_dim = config.latent_dim
+    data = config.data
+    num_input_characters = config.num_input_characters
+    num_output_characters = config.num_output_characters
+    input_encoding = config.input_encoding
+    output_encoding = config.output_encoding
+    enc = config.encoder
     max_output_length = enc.max_output_length
 
     print(num_input_characters)
@@ -48,7 +48,7 @@ def main():
               batch_size=batch_size,
               epochs=epochs,
               validation_split=0.1)
-    
+
 
 
 if __name__ == '__main__':
