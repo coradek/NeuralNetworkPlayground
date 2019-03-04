@@ -14,6 +14,57 @@ from tensorflow.python.keras.optimizers import RMSprop
 from .custom_layers.tflite_rnn_experimental import TFLiteLSTMCell
 
 
+def convertible_gru(input_size,
+             output_size,
+             latent_dim,
+             max_input_length,
+             max_out_seq_len,
+             use_bidirectional=False,
+            ):
+    """
+    A simple GRU stripped down about as much as possible
+    Can be converted from keras to tflite
+    Does NOT produce the same output
+    """
+    inputs = Input(shape=(max_input_length, input_size,))
+    if use_bidirectional:
+        x = Bidirectional(
+                GRU(latent_dim,
+                    return_sequences=False,
+                    unroll=True,
+                ),
+                merge_mode='concat',
+            )(inputs)
+        latent_dim_2 = latent_dim * 2
+    else:
+        x = GRU(latent_dim,
+                return_sequences=False,
+                unroll=True,
+               )(inputs)
+        latent_dim_2 = latent_dim
+    x = RepeatVector(max_out_seq_len)(x)
+    x = GRU(latent_dim_2,
+            kernel_initializer='glorot_uniform',
+            recurrent_initializer='orthogonal',
+            return_sequences=True,
+            unroll=True,
+           )(x)
+    outputs = TimeDistributed(
+                Dense(output_size, activation="softmax")
+              )(x)
+    model = Model(inputs, outputs)
+
+    rms_prop = RMSprop(
+                       rho=0.9,
+                       decay=0.0,
+                       epsilon=1e-08,
+                       )
+    model.compile(loss="categorical_crossentropy",
+                  optimizer=rms_prop)
+
+    return model
+
+
 def gru_functional(input_size, output_size,
                    latent_dim,
                    max_input_length, max_out_seq_len):

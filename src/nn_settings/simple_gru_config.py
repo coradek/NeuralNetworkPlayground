@@ -5,7 +5,7 @@ Settings and Data for the simple gru in simple_rnns.py
 """
 import numpy as np
 from ..dataset_builders.text_data import create_easy_token_extraction_data
-
+from ..nn_utils.rnn_encoder import Encoder
 
 
 class Config:
