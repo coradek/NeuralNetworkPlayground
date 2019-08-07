@@ -1,6 +1,6 @@
 """tflite_rnn.py
 
-a place to experiment with rnns built for
+a place to experiment with keras rnns built for
 converstion to tflite
 """
 from tensorflow.python.keras.models import Model, Sequential

@@ -28,3 +28,35 @@ class SimpleCNN:
                       optimizer="adagrad",
                       metrics=['accuracy'])
         self.cnn=model
+
+def cnn_adi_1(image_width,image_height):
+    weight_decay=1e-4
+    #model.add(Conv2D(64, kernel_size=3, activation='relu', input_shape=(28,28,1)))
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), padding='same', activation='relu',data_format='channels_last',input_shape=(image_width,image_height,3)))
+    #model.add(Conv2D(32, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(2,2))
+    #model.add(Dropout(0.3))
+
+    model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
+    #model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(2,2))
+    #model.add(Dropout(0.3))
+
+    model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
+    #model.add(Conv2D(128, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(2,2))
+
+    #model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
+    #model.add(Conv2D(128, (3, 3), activation='relu'))
+    #model.add(MaxPooling2D(2,2))
+    #model.add(Dropout(0.3))
+
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dense(1, activation='softmax'))
+    model.compile(optimizer='Adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+    return model
