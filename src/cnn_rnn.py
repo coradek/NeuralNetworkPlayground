@@ -1,4 +1,4 @@
-"""nn.py
+"""cnn_rnn.py
 
 Neural Networks for cnn-rnn project
 """
