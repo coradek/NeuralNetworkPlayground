@@ -1,0 +1,21 @@
+name:
+Evan Adkins
+
+Alias:
+??
+
+topic:
+Token Extraction from Images
+
+Abstract (3-5 sentences):
+The Data Science team is able to extract Expenseit tokens directly from images! Recently, we retrained our image-to-amount model to perform better on international receipts. This model now works on a wider variety of receipt types, currencies and languages. Come watch a live demo of this model and find out about how these models work and what we learned during the retraining process.
+
+Format:
+Demo Pod
+
+
+Key Audience:
+People who want to know more about cutting edge machine learning models. People who want to use images as a source of actionable data. People who like data.
+
+Key Takeaways:
+What kind of data can be extracted from images. How to extract data from images. How to leverage a good model to make a great one.
